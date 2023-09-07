@@ -1,16 +1,7 @@
 #!/usr/bin/env python3
-# Import XML File 
-# Parse XML File with specific headers
-# Required headers
-## 1. Title
-## 2. Level
-## 3. Relevant CWEs
-## 4. Vulnerability
-## 5. Threat
-## 6. Mitigation
-## 7.Verification
-import xml.etree.ElementTree as ET
+
 import os
+from lxml import etree as ET
 
 class XmlParser:
 
@@ -29,7 +20,7 @@ class XmlParser:
 
     def print_body_elements(self):
         """Find and print elements within the 'w:body' tag."""
-        body = self.root.find('.//w:body', self.namespace)
+        body = self.root.find('.//w:body', namespaces=self.namespace)
         if body is not None:
             self._print_elements(body)
         else:
@@ -38,23 +29,31 @@ class XmlParser:
     # Remove Hyperlink Tags
     def remove_hyperlink_tags(self):
         # Find all 'w:r' tags with "HYPERLINK" text
-        hyperlink_tags = self.root.findall(".//w:r[w:t='HYPERLINK']", self.namespace)
+        hyperlink_tags = self.root.xpath(".//w:r[w:t='HYPERLINK']", namespaces=self.namespace)
         for tag in hyperlink_tags:
             tag.getparent().remove(tag)
 
+    # Remove Deleted Text
+    def remove_deleted_text(self):
+        # Remove any w:del tags
+        del_tags = self.root.xpath(".//w:del", namespaces=self.namespace)
+        for tag in del_tags:
+            tag.getparent().remove(tag)
+
+        # Remove any tags with a w:rsidDel attribute
+        rsid_del_tags = self.root.xpath(".//*[@w:rsidDel]", namespaces=self.namespace)
+        for tag in rsid_del_tags:
+            tag.getparent().remove(tag)
 
 def main():
     input_file = input("Enter the file name: ")
     try:
         parser = XmlParser(input_file)
+        parser.remove_hyperlink_tags()
+        parser.remove_deleted_text()
         parser.print_body_elements()
     except ValueError as e:
         print(e)
 
-
 if __name__ == "__main__":
     main()
-
-
-
-
