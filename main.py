@@ -54,16 +54,43 @@ class XmlParser:
             rsid_del_tags = [child for child in parent if "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rsidDel" in child.attrib]
         for tag in rsid_del_tags:
             parent.remove(tag)
+    
+    def is_heading2_section(self, p):
+        """Returns True if the given paragraph section has been styled as a Heading2"""
+        return_val = False
+        heading_style_elem = p.find(".//w:pStyle[@w:val='Heading2']", self.namespace)
+        if heading_style_elem is not None:
+            return_val = True
+        return return_val
+    
+    def get_section_text(self,p):
+        """Returns the joined text of the text elements under the given paragraph tag"""
+        return_val = ''
+        text_elems = p.findall('.//w:t', self.namespace)
+        if text_elems is not None:
+            return_val = ''.join([t.text for t in text_elems])
+        return return_val
+    
+    def get_paragraph_sections(self):
+        """Fetch all paragraph sections."""
+        body = self.root.find('.//w:body', self.namespace)
+        return body.findall('w:p', self.namespace) if body is not None else []
+
+ 
 
 
 
 def main():
     input_file = input("Enter the file name: ")
     try:
+        
         parser = XmlParser(input_file)
+        paragraph_sections = parser.get_paragraph_sections()
+        section_labels = [parser.get_section_text(s) if parser.is_heading2_section(s) else '' for s in paragraph_sections]
+        print(section_labels)
         parser.remove_hyperlink_tags()
         parser.remove_deleted_text()
-        parser.print_body_elements()
+        #parser.print_body_elements()
     except ValueError as e:
         print(e)
 
