@@ -63,6 +63,14 @@ class XmlParser:
             return_val = True
         return return_val
     
+    def is_heading3_section(self, p):
+        """Returns True if the given paragraph section has been styled as a Heading2"""
+        return_val = False
+        heading_style_elem = p.find(".//w:pStyle[@w:val='Heading3']", self.namespace)
+        if heading_style_elem is not None:
+            return_val = True
+        return return_val
+    
     def get_section_text(self,p):
         """Returns the joined text of the text elements under the given paragraph tag"""
         return_val = ''
@@ -75,9 +83,7 @@ class XmlParser:
         """Fetch all paragraph sections."""
         body = self.root.find('.//w:body', self.namespace)
         return body.findall('w:p', self.namespace) if body is not None else []
-
  
-
 
 
 def main():
@@ -86,8 +92,12 @@ def main():
         
         parser = XmlParser(input_file)
         paragraph_sections = parser.get_paragraph_sections()
-        section_labels = [parser.get_section_text(s) if parser.is_heading2_section(s) else '' for s in paragraph_sections]
-        print(section_labels)
+        heading2_section = [parser.get_section_text(s) if parser.is_heading2_section(s) else '' for s in paragraph_sections]
+        heading3_section = [parser.get_section_text(s) if parser.is_heading3_section(s) else '' for s in paragraph_sections]
+        section2_text = [{'title': t, 'text': parser.get_section_text(paragraph_sections[i+1])} for i, t in enumerate(heading2_section) if len(t) > 0]
+        section3_text = [{'title': t, 'text': parser.get_section_text(paragraph_sections[i+1])} for i, t in enumerate(heading3_section) if len(t) > 0]
+        print("This is section 2 {}".format(section2_text))
+        print("This is section 3 {}".format(section3_text))
         parser.remove_hyperlink_tags()
         parser.remove_deleted_text()
         #parser.print_body_elements()
