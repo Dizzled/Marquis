@@ -12,7 +12,6 @@
 import xml.etree.ElementTree as ET
 import os
 
-
 class XmlParser:
 
     def __init__(self, filepath):
@@ -39,7 +38,7 @@ class XmlParser:
     # Remove Hyperlink Tags
     def remove_hyperlink_tags(self):
         # Find all 'w:r' tags with "HYPERLINK" text
-        hyperlink_tags = self.root.findall(".//w:r[w:t='HYPERLINK']", self.ns)
+        hyperlink_tags = self.root.findall(".//w:r[w:t='HYPERLINK']", self.namespace)
         for tag in hyperlink_tags:
             tag.getparent().remove(tag)
 
