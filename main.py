@@ -1,7 +1,16 @@
 #!/usr/bin/env python3
-
+# Import XML File 
+# Parse XML File with specific headers
+# Required headers
+## 1. Title
+## 2. Level
+## 3. Relevant CWEs
+## 4. Vulnerability
+## 5. Threat
+## 6. Mitigation
+## 7.Verification
+import xml.etree.ElementTree as ET
 import os
-from lxml import etree as ET
 
 class XmlParser:
 
@@ -20,30 +29,33 @@ class XmlParser:
 
     def print_body_elements(self):
         """Find and print elements within the 'w:body' tag."""
-        body = self.root.find('.//w:body', namespaces=self.namespace)
+        body = self.root.find('.//w:body', self.namespace)
         if body is not None:
             self._print_elements(body)
         else:
             print("w:body tag not found in the XML")
     
-    # Remove Hyperlink Tags
     def remove_hyperlink_tags(self):
-        # Find all 'w:r' tags with "HYPERLINK" text
-        hyperlink_tags = self.root.xpath(".//w:r[w:t='HYPERLINK']", namespaces=self.namespace)
+        for parent in self.root.findall(".//w:r/..", self.namespace):
+        # Find all 'w:r' child tags with "HYPERLINK" text under the current parent
+            hyperlink_tags = [child for child in parent if child.tag == '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}r' and child.find("w:t", self.namespace) is not None and child.find("w:t", self.namespace).text == "HYPERLINK"]
         for tag in hyperlink_tags:
-            tag.getparent().remove(tag)
+            parent.remove(tag)
 
-    # Remove Deleted Text
     def remove_deleted_text(self):
-        # Remove any w:del tags
-        del_tags = self.root.xpath(".//w:del", namespaces=self.namespace)
+    # Remove any w:del tags
+        for parent in self.root.findall(".//w:del/..", self.namespace):
+            del_tags = [child for child in parent if child.tag == '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}del']
         for tag in del_tags:
-            tag.getparent().remove(tag)
+            parent.remove(tag)
 
-        # Remove any tags with a w:rsidDel attribute
-        rsid_del_tags = self.root.xpath(".//*[@w:rsidDel]", namespaces=self.namespace)
+    # Remove any tags with a w:rsidDel attribute
+        for parent in self.root.findall(".//*[@w:rsidDel]/..", self.namespace):
+            rsid_del_tags = [child for child in parent if "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rsidDel" in child.attrib]
         for tag in rsid_del_tags:
-            tag.getparent().remove(tag)
+            parent.remove(tag)
+
+
 
 def main():
     input_file = input("Enter the file name: ")
@@ -55,5 +67,10 @@ def main():
     except ValueError as e:
         print(e)
 
+
 if __name__ == "__main__":
     main()
+
+
+
+
