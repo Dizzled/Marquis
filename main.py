@@ -8,7 +8,7 @@
 ## 4. Vulnerability
 ## 5. Threat
 ## 6. Mitigation
-## 7.Verification
+## 7. Verification
 import xml.etree.ElementTree as ET
 import os
 
@@ -64,7 +64,7 @@ class XmlParser:
         return return_val
     
     def is_heading3_section(self, p):
-        """Returns True if the given paragraph section has been styled as a Heading2"""
+        """Returns True if the given paragraph section has been styled as a Heading3"""
         return_val = False
         heading_style_elem = p.find(".//w:pStyle[@w:val='Heading3']", self.namespace)
         if heading_style_elem is not None:
@@ -83,7 +83,31 @@ class XmlParser:
         """Fetch all paragraph sections."""
         body = self.root.find('.//w:body', self.namespace)
         return body.findall('w:p', self.namespace) if body is not None else []
- 
+    
+    def extract_high_severity_findings(self):
+        paragraphs = self.root.findall('.//w:p', self.namespace)
+        high_severity_section_found = False
+        findings_dict = {}
+
+        for p in paragraphs:
+            if self.is_heading2_section(p) and "High Severity Findings" in self.get_section_text(p):
+                high_severity_section_found = True
+                findings_dict = {}  # Initialize dictionary
+                i = 0
+            elif high_severity_section_found and self.is_heading3_section(p) and self.get_section_text(p).strip() != '':
+                findings_dict[f'title {i}'] = self.get_section_text(p)
+                i += 1
+            elif high_severity_section_found and self.is_heading2_section(p):
+                # another Heading2 found, means we are out of the "High Severity Findings" section
+                break
+        return findings_dict
+    
+    def print_findings(self, findings_dict):
+        for title in findings_dict.items():
+            print(title)
+            
+                
+
 
 
 def main():
@@ -92,14 +116,14 @@ def main():
         
         parser = XmlParser(input_file)
         paragraph_sections = parser.get_paragraph_sections()
-        heading2_section = [parser.get_section_text(s) if parser.is_heading2_section(s) else '' for s in paragraph_sections]
-        heading3_section = [parser.get_section_text(s) if parser.is_heading3_section(s) else '' for s in paragraph_sections]
-        section2_text = [{'title': t, 'text': parser.get_section_text(paragraph_sections[i+1])} for i, t in enumerate(heading2_section) if len(t) > 0]
-        section3_text = [{'title': t, 'text': parser.get_section_text(paragraph_sections[i+1])} for i, t in enumerate(heading3_section) if len(t) > 0]
-        print("This is section 2 {}".format(section2_text))
-        print("This is section 3 {}".format(section3_text))
         parser.remove_hyperlink_tags()
         parser.remove_deleted_text()
+        # heading2_section = [parser.get_section_text(s) if parser.is_heading2_section(s) else '' for s in paragraph_sections]
+        # section2_text = [{'title': t, 'text': parser.get_section_text(paragraph_sections[i+1])} for i, t in enumerate(heading2_section) if len(t) > 0]
+        #print("This is section 3 {}".format(section2_text))
+        high_severity = parser.extract_high_severity_findings()
+        parser.print_findings(high_severity)
+        
         #parser.print_body_elements()
     except ValueError as e:
         print(e)
