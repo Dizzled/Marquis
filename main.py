@@ -94,7 +94,7 @@ class XmlParser:
                 high_severity_section_found = True
                 
             elif high_severity_section_found and self.is_heading3_section(p) and self.get_section_text(p).strip() != '':
-                self.findings_dict[f'title {i}'] = self.get_section_text(p)
+                self.findings_dict[f'High {i}'] = self.get_section_text(p)
                 i += 1
             elif high_severity_section_found and self.is_heading2_section(p):
                 # another Heading2 found, means we are out of the "High Severity Findings" section
@@ -108,10 +108,24 @@ class XmlParser:
             if self.is_heading2_section(p) and "Medium Severity Findings" in self.get_section_text(p):
                 medium_severity_section_found = True
             elif medium_severity_section_found and self.is_heading3_section(p) and self.get_section_text(p).strip() != '':
-                self.findings_dict[f'title {i}'] = self.get_section_text(p)
+                self.findings_dict[f'Medium {i}'] = self.get_section_text(p)
                 i += 1
             elif medium_severity_section_found and self.is_heading2_section(p):
                 # another Heading2 found, means we are out of the "Medium Severity Findings" section
+                break
+        self.extract_low_severity_findings(i)
+
+    def extract_low_severity_findings(self,i):
+        paragraphs = self.root.findall('.//w:p', self.namespace)
+        medium_severity_section_found = False
+        for p in paragraphs:
+            if self.is_heading2_section(p) and "Low Severity Findings" in self.get_section_text(p):
+                medium_severity_section_found = True
+            elif medium_severity_section_found and self.is_heading3_section(p) and self.get_section_text(p).strip() != '':
+                self.findings_dict[f'Low {i}'] = self.get_section_text(p)
+                i += 1
+            elif medium_severity_section_found and self.is_heading2_section(p):
+                # another Heading2 found, means we are out of the "Low Severity Findings" section
                 break
     
     def print_findings(self):
