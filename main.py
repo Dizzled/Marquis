@@ -20,6 +20,7 @@ class XmlParser:
         self.tree = ET.parse(filepath)
         self.root = self.tree.getroot()
         self.namespace = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
+        self.findings_dict = {} # Initialize dictionary
 
     def _print_elements(self, element, indent=0):
         """Recursively print nested XML elements."""
@@ -84,45 +85,55 @@ class XmlParser:
         body = self.root.find('.//w:body', self.namespace)
         return body.findall('w:p', self.namespace) if body is not None else []
     
-    def extract_high_severity_findings(self):
+    def extract_high_severity_findings(self, i):
         paragraphs = self.root.findall('.//w:p', self.namespace)
         high_severity_section_found = False
-        findings_dict = {}
 
         for p in paragraphs:
             if self.is_heading2_section(p) and "High Severity Findings" in self.get_section_text(p):
                 high_severity_section_found = True
-                findings_dict = {}  # Initialize dictionary
-                i = 0
+                
             elif high_severity_section_found and self.is_heading3_section(p) and self.get_section_text(p).strip() != '':
-                findings_dict[f'title {i}'] = self.get_section_text(p)
+                self.findings_dict[f'title {i}'] = self.get_section_text(p)
                 i += 1
             elif high_severity_section_found and self.is_heading2_section(p):
                 # another Heading2 found, means we are out of the "High Severity Findings" section
                 break
-        return findings_dict
+        self.extract_medium_severity_findings(i)
     
-    def print_findings(self, findings_dict):
-        for title in findings_dict.items():
+    def extract_medium_severity_findings(self,i):
+        paragraphs = self.root.findall('.//w:p', self.namespace)
+        medium_severity_section_found = False
+        for p in paragraphs:
+            if self.is_heading2_section(p) and "Medium Severity Findings" in self.get_section_text(p):
+                medium_severity_section_found = True
+            elif medium_severity_section_found and self.is_heading3_section(p) and self.get_section_text(p).strip() != '':
+                self.findings_dict[f'title {i}'] = self.get_section_text(p)
+                i += 1
+            elif medium_severity_section_found and self.is_heading2_section(p):
+                # another Heading2 found, means we are out of the "Medium Severity Findings" section
+                break
+    
+    def print_findings(self):
+        for title in self.findings_dict.items():
             print(title)
             
                 
 
-
-
 def main():
+    i = 0
     input_file = input("Enter the file name: ")
     try:
         
         parser = XmlParser(input_file)
-        paragraph_sections = parser.get_paragraph_sections()
+        # paragraph_sections = parser.get_paragraph_sections()
         parser.remove_hyperlink_tags()
         parser.remove_deleted_text()
         # heading2_section = [parser.get_section_text(s) if parser.is_heading2_section(s) else '' for s in paragraph_sections]
         # section2_text = [{'title': t, 'text': parser.get_section_text(paragraph_sections[i+1])} for i, t in enumerate(heading2_section) if len(t) > 0]
         #print("This is section 3 {}".format(section2_text))
-        high_severity = parser.extract_high_severity_findings()
-        parser.print_findings(high_severity)
+        parser.extract_high_severity_findings(i)
+        parser.print_findings()
         
         #parser.print_body_elements()
     except ValueError as e:
